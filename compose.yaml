@@ -1,8 +1,49 @@
 services:
   rabbitmq:
     image: 'rabbitmq:latest'
+    container_name: rabbitmq
     environment:
       - 'RABBITMQ_DEFAULT_PASS=secret'
       - 'RABBITMQ_DEFAULT_USER=myuser'
     ports:
       - '5672'
+    networks:
+      - movieapp-network
+  
+  postgres:
+    image: 'postgres:15-alpine'
+    container_name: user-db
+    environment:
+      - 'POSTGRES_DB=userservice'
+      - 'POSTGRES_PASSWORD=dev_password'
+      - 'POSTGRES_USER=movieapp'
+    ports:
+      - '5431:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U movieapp -d userservice"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - movieapp-network
+
+  redis:
+    image: 'redis:7-alpine'
+    container_name: redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - movieapp-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  movieapp-network:
+    driver: bridge
+    name: movieapp-network
