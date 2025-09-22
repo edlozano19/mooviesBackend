@@ -2,6 +2,8 @@ package com.moovies.mooviesBackend.user.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.moovies.mooviesBackend.user.entity.User;
 import com.moovies.mooviesBackend.user.repository.UserRepository;
+
+import com.moovies.mooviesBackend.exception.UserAlreadyActiveException;
+import com.moovies.mooviesBackend.exception.UserAlreadyInactiveException;
+import com.moovies.mooviesBackend.exception.UserNotFoundException;
 
 @Service
 @Transactional
@@ -156,8 +162,14 @@ public class UserService {
         
         try {
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
-            
+                .orElseThrow(() -> new UserNotFoundException(userId));
+
+            // Check if user is already inactive
+            if (!user.getIsActive()) {
+                logger.warn("Attempted to deactivate user with ID {} who is already inactive", userId);
+                throw new UserAlreadyInactiveException(userId);
+            }
+
             user.setIsActive(false);
             logger.info("Successfully deactivated user with ID: {}", userId);
             return true;
@@ -174,7 +186,13 @@ public class UserService {
         
         try {
             User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + userId));
+                .orElseThrow(() -> new UserNotFoundException(userId));
+            
+            // Check if user is already active
+            if (user.getIsActive()) {
+                logger.warn("Attempted to reactivate user with ID {} who is already active", userId);
+                throw new UserAlreadyActiveException(userId);
+            }
             
             user.setIsActive(true);
             logger.info("Successfully reactivated user with ID: {}", userId);
@@ -186,8 +204,44 @@ public class UserService {
         }
     }
 
+    @Transactional
+    public boolean deactivateBulkUsers(List<Long> userIds) {
+        logger.debug("Deactivating bulk users with IDs: {}", userIds);
+        
+        try {
+            List<User> existingUsers = userRepository.findAllById(userIds);
+
+            if (existingUsers.size() != userIds.size()) {
+                Set<Long> foundIds = existingUsers.stream()
+                    .map(User::getId)
+                    .collect(Collectors.toSet());
+
+                List<Long> missingIds = userIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .collect(Collectors.toList());
+
+                throw new RuntimeException("Some users not found: " + missingIds);
+            }
+
+            else {
+                existingUsers.forEach(user -> user.setIsActive(false));
+                logger.info("Successfully deactivated bulk users with IDs: {}", userIds);
+                return true;
+            }
+            
+        } catch (Exception e ) {
+            logger.error("Error deactivating bulk users with IDs {}: {}", userIds, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+
     public List<User> getAllUsers() {
         return userRepository.findAllByIsActiveTrue();
+    }
+
+    public List<User> getInactiveUsers() {
+        return userRepository.findAllByIsActiveFalse();
     }
     
 }

@@ -106,6 +106,20 @@ public class UserController {
         }
     }
 
+    @GetMapping("/inactive")
+    public ResponseEntity<?> getInactiveUsers() {
+        logger.debug("Getting inactive users");
+
+        try {
+            List<User> users = userService.getInactiveUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            logger.error("Error retrieving inactive users: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
     // Update user
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
@@ -171,21 +185,38 @@ public class UserController {
     public ResponseEntity<?> deactivateUser(@PathVariable Long id) {
         logger.debug("Deactivating user with ID: {}", id);
         
+        // Let GlobalExceptionHandler handle all exceptions
+        boolean success = userService.deactivateUser(id);
+        
+        if (success) {
+            logger.info("Successfully deactivated user with ID: {}", id);
+            return ResponseEntity.ok(new SuccessResponse("User deactivated successfully"));
+        } else {
+            // This should rarely happen with proper exception handling
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    @DeleteMapping("/deactivate-bulk")
+    public ResponseEntity<?> deactivateBulkUsers(@RequestBody List<Long> userIds) {
+        logger.debug("Deactivating bulk users with IDs: {}", userIds);
+
         try {
-            boolean success = userService.deactivateUser(id);
-            
+            boolean success = userService.deactivateBulkUsers(userIds);
+
             if (success) {
-                logger.info("Successfully deactivated user with ID: {}", id);
-                return ResponseEntity.ok(new SuccessResponse("User deactivated successfully"));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("User not found with ID: " + id));
+                logger.info("Successfully deactivated bulk users with IDs: {}", userIds);
+                return ResponseEntity.ok(new SuccessResponse("Bulk users deactivated successfully"));
             }
-            
-        } catch (Exception e) {
-            logger.error("Error deactivating user with ID {}: {}", id, e.getMessage());
-            if (e.getMessage().contains("not found")) {
+            else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Some users not found: " + userIds));
+            }
+        } catch (Exception e) {
+            logger.error("Error deactivating bulk users with IDs {}: {}", userIds, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(e.getMessage()));
             } else {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -199,26 +230,14 @@ public class UserController {
     public ResponseEntity<?> reactivateUser(@PathVariable Long id) {
         logger.debug("Reactivating user with ID: {}", id);
         
-        try {
-            boolean success = userService.reactivateUser(id);
-            
-            if (success) {
-                logger.info("Successfully reactivated user with ID: {}", id);
-                return ResponseEntity.ok(new SuccessResponse("User reactivated successfully"));
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("User not found with ID: " + id));
-            }
-            
-        } catch (Exception e) {
-            logger.error("Error reactivating user with ID {}: {}", id, e.getMessage());
-            if (e.getMessage().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse(e.getMessage()));
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Internal server error"));
-            }
+        boolean success = userService.reactivateUser(id);
+
+        if (success) {
+            return ResponseEntity.ok(new SuccessResponse("User reactivated successfully"));
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("User not found with ID: " + id));
         }
     }
 
@@ -281,13 +300,28 @@ public class UserController {
 
     public static class ErrorResponse {
         private String error;
+        private String timestamp;
+        private Long userId;
 
         public ErrorResponse(String error) {
             this.error = error;
+            this.timestamp = java.time.Instant.now().toString();
+        }
+
+        public ErrorResponse(String error, Long userId) {
+            this.error = error;
+            this.userId = userId;
+            this.timestamp = java.time.Instant.now().toString();
         }
 
         public String getError() { return error; }
         public void setError(String error) { this.error = error; }
+        
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+        
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
     }
 
     public static class SuccessResponse {

@@ -44,8 +44,8 @@
             <appender-ref ref="CONSOLE"/>
         </logger>
         
-        <!-- Database logs -->
-        <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+        <!-- Database logs (disabled for cleaner output) -->
+        <logger name="org.hibernate.SQL" level="WARN" additivity="false">
             <appender-ref ref="CONSOLE"/>
         </logger>
         
