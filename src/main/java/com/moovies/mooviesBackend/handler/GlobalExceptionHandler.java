@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import com.moovies.mooviesBackend.exception.UserAlreadyActiveException;
 import com.moovies.mooviesBackend.exception.UserAlreadyInactiveException;
 import com.moovies.mooviesBackend.exception.UserNotFoundException;
+import com.moovies.mooviesBackend.exception.UserPasswordMismatchException;
 import com.moovies.mooviesBackend.user.controller.UserController.ErrorResponse;
+import com.moovies.mooviesBackend.exception.UserUsernameAlreadyExists;
+import com.moovies.mooviesBackend.exception.UserEmailAlreadyExistsException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -42,6 +45,27 @@ public class GlobalExceptionHandler {
         logger.error("Unexpected runtime exception: {}", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(new ErrorResponse("Internal server error"));
+    }
+
+    @ExceptionHandler(UserUsernameAlreadyExists.class)
+    public ResponseEntity<ErrorResponse> handleUserUsernameAlreadyExists(UserUsernameAlreadyExists ex) {
+        logger.warn("User username already exists: userId={}", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UserEmailAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleUserEmailAlreadyExistsException(UserEmailAlreadyExistsException ex) {
+        logger.warn("User email already exists: userId={}", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex.getMessage()));
+    }
+
+    @ExceptionHandler(UserPasswordMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleUserPassowrdMismatchException(UserPasswordMismatchException ex) {
+        logger.warn("User password mismatch: userId={}", ex);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(ex.getMessage()));
     }
     
 }

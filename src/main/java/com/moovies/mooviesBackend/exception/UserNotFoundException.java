@@ -8,4 +8,8 @@ public class UserNotFoundException extends UserStateException {
     public UserNotFoundException(Long userId) {
         super("User not found with ID: " + userId, userId);
     }
+
+    public UserNotFoundException(String searchCriteria) {
+        super("User not found with " + searchCriteria, null);
+    }
 }

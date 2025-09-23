@@ -6,10 +6,12 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.moovies.mooviesBackend.user.entity.User;
 import com.moovies.mooviesBackend.user.service.UserService;
 
@@ -39,10 +41,14 @@ public class UserController {
             
             return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
             
+        } catch (DataAccessException e) {
+            logger.error("Database unavailable during user creation", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse("Service temporarily unavailable"));
         } catch (Exception e) {
-            logger.error("Error creating user: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(new ErrorResponse("Failed to create user: " + e.getMessage()));
+            logger.error("Unexpected error creating user", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error: " + e.getMessage()));
         }
     }
 
@@ -50,19 +56,13 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
         logger.debug("Getting user by ID: {}", id);
-        
-        try {
-            Optional<User> user = userService.getUserById(id);
-            
-            if (user.isPresent()) {
-                return ResponseEntity.ok(user.get());
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("User not found with ID: " + id));
-            }
-            
-        } catch (Exception e) {
-            logger.error("Error retrieving user by ID {}: {}", id, e.getMessage());
+
+        Optional<User> user = userService.getUserById(id);
+
+        if (user.isPresent()) {
+            return ResponseEntity.ok(user.get());
+        }
+        else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("Internal server error"));
         }
@@ -72,19 +72,13 @@ public class UserController {
     @GetMapping("/search")
     public ResponseEntity<?> getUserByUsernameOrEmail(@RequestParam String query) {
         logger.debug("Getting user by username or email: {}", query);
-        
-        try {
-            Optional<User> user = userService.getUserByUsernameOrEmail(query);
-            
-            if (user.isPresent()) {
-                return ResponseEntity.ok(user.get());
-            } else {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("User not found with username or email: " + query));
-            }
-            
-        } catch (Exception e) {
-            logger.error("Error retrieving user by username or email {}: {}", query, e.getMessage());
+
+        Optional<User> user = userService.getUserByUsernameOrEmail(query);
+
+        if (user.isPresent()) {
+            return ResponseEntity.ok(user.get());
+        }
+        else {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("Internal server error"));
         }
@@ -137,18 +131,14 @@ public class UserController {
             
             return ResponseEntity.ok(updatedUser);
             
+        } catch (DataAccessException e) {
+            logger.error("Database unavailable during user creation", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse("Service temporarily unavailable"));
         } catch (Exception e) {
-            logger.error("Error updating user with ID {}: {}", id, e.getMessage());
-            if (e.getMessage().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse(e.getMessage()));
-            } else if (e.getMessage().contains("already exists")) {
-                return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ErrorResponse(e.getMessage()));
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Internal server error"));
-            }
+            logger.error("Unexpected error creating user", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error: " + e.getMessage()));
         }
     }
 
@@ -156,27 +146,16 @@ public class UserController {
     @PutMapping("/{id}/password")
     public ResponseEntity<?> updatePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest request) {
         logger.debug("Updating password for user ID: {}", id);
+    
+        boolean success = userService.updatePassword(id, request.getCurrentPassword(), request.getNewPassword());
         
-        try {
-            boolean success = userService.updatePassword(id, request.getCurrentPassword(), request.getNewPassword());
-            
-            if (success) {
-                logger.info("Successfully updated password for user ID: {}", id);
-                return ResponseEntity.ok(new SuccessResponse("Password updated successfully"));
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse("Current password is incorrect"));
-            }
-            
-        } catch (Exception e) {
-            logger.error("Error updating password for user ID {}: {}", id, e.getMessage());
-            if (e.getMessage().contains("not found")) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse(e.getMessage()));
-            } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Internal server error"));
-            }
+        if (success) {
+            logger.info("Successfully updated password for user ID: {}", id);
+            return ResponseEntity.ok(new SuccessResponse("Password updated successfully"));
+        } 
+        else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
         }
     }
 
@@ -191,7 +170,8 @@ public class UserController {
         if (success) {
             logger.info("Successfully deactivated user with ID: {}", id);
             return ResponseEntity.ok(new SuccessResponse("User deactivated successfully"));
-        } else {
+        } 
+        else {
             // This should rarely happen with proper exception handling
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("Internal server error"));
@@ -298,6 +278,7 @@ public class UserController {
         public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
     }
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class ErrorResponse {
         private String error;
         private String timestamp;
