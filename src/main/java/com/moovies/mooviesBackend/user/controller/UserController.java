@@ -1,0 +1,318 @@
+package com.moovies.mooviesBackend.user.controller;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.moovies.mooviesBackend.user.entity.User;
+import com.moovies.mooviesBackend.user.service.UserService;
+
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+
+    @Autowired
+    private UserService userService;
+
+    // Create a new user
+    @PostMapping
+    public ResponseEntity<?> createUser(@RequestBody CreateUserRequest request) {
+        logger.debug("Creating user with username: {}", request.getUsername());
+        
+        try {
+            User user = new User();
+            user.setUsername(request.getUsername());
+            user.setEmail(request.getEmail());
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            
+            User createdUser = userService.createUser(user, request.getPassword());
+            logger.info("Successfully created user with ID: {}", createdUser.getId());
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+            
+        } catch (DataAccessException e) {
+            logger.error("Database unavailable during user creation", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse("Service temporarily unavailable"));
+        } catch (Exception e) {
+            logger.error("Unexpected error creating user", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error: " + e.getMessage()));
+        }
+    }
+
+    // Get user by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        logger.debug("Getting user by ID: {}", id);
+
+        Optional<User> user = userService.getUserById(id);
+
+        if (user.isPresent()) {
+            return ResponseEntity.ok(user.get());
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    // Get user by username or email
+    @GetMapping("/search")
+    public ResponseEntity<?> getUserByUsernameOrEmail(@RequestParam String query) {
+        logger.debug("Getting user by username or email: {}", query);
+
+        Optional<User> user = userService.getUserByUsernameOrEmail(query);
+
+        if (user.isPresent()) {
+            return ResponseEntity.ok(user.get());
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    // Get all active users
+    @GetMapping
+    public ResponseEntity<?> getAllUsers() {
+        logger.debug("Getting all active users");
+        
+        try {
+            List<User> users = userService.getAllUsers();
+            return ResponseEntity.ok(users);
+            
+        } catch (Exception e) {
+            logger.error("Error retrieving all users: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    @GetMapping("/inactive")
+    public ResponseEntity<?> getInactiveUsers() {
+        logger.debug("Getting inactive users");
+
+        try {
+            List<User> users = userService.getInactiveUsers();
+            return ResponseEntity.ok(users);
+        } catch (Exception e) {
+            logger.error("Error retrieving inactive users: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    // Update user
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UpdateUserRequest request) {
+        logger.debug("Updating user with ID: {}", id);
+        
+        try {
+            User updateData = new User();
+            updateData.setUsername(request.getUsername());
+            updateData.setEmail(request.getEmail());
+            updateData.setFirstName(request.getFirstName());
+            updateData.setLastName(request.getLastName());
+            
+            User updatedUser = userService.updateUser(id, updateData);
+            logger.info("Successfully updated user with ID: {}", id);
+            
+            return ResponseEntity.ok(updatedUser);
+            
+        } catch (DataAccessException e) {
+            logger.error("Database unavailable during user creation", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse("Service temporarily unavailable"));
+        } catch (Exception e) {
+            logger.error("Unexpected error creating user", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error: " + e.getMessage()));
+        }
+    }
+
+    // Update user password
+    @PutMapping("/{id}/password")
+    public ResponseEntity<?> updatePassword(@PathVariable Long id, @RequestBody UpdatePasswordRequest request) {
+        logger.debug("Updating password for user ID: {}", id);
+    
+        boolean success = userService.updatePassword(id, request.getCurrentPassword(), request.getNewPassword());
+        
+        if (success) {
+            logger.info("Successfully updated password for user ID: {}", id);
+            return ResponseEntity.ok(new SuccessResponse("Password updated successfully"));
+        } 
+        else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    // Deactivate user (soft delete)
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deactivateUser(@PathVariable Long id) {
+        logger.debug("Deactivating user with ID: {}", id);
+        
+        // Let GlobalExceptionHandler handle all exceptions
+        boolean success = userService.deactivateUser(id);
+        
+        if (success) {
+            logger.info("Successfully deactivated user with ID: {}", id);
+            return ResponseEntity.ok(new SuccessResponse("User deactivated successfully"));
+        } 
+        else {
+            // This should rarely happen with proper exception handling
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Internal server error"));
+        }
+    }
+
+    @DeleteMapping("/deactivate-bulk")
+    public ResponseEntity<?> deactivateBulkUsers(@RequestBody List<Long> userIds) {
+        logger.debug("Deactivating bulk users with IDs: {}", userIds);
+
+        try {
+            boolean success = userService.deactivateBulkUsers(userIds);
+
+            if (success) {
+                logger.info("Successfully deactivated bulk users with IDs: {}", userIds);
+                return ResponseEntity.ok(new SuccessResponse("Bulk users deactivated successfully"));
+            }
+            else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("Some users not found: " + userIds));
+            }
+        } catch (Exception e) {
+            logger.error("Error deactivating bulk users with IDs {}: {}", userIds, e.getMessage());
+            if (e.getMessage().contains("not found")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(e.getMessage()));
+            } else {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("Internal server error"));
+            }
+        }
+    }
+
+    // Reactivate user
+    @PutMapping("/{id}/reactivate")
+    public ResponseEntity<?> reactivateUser(@PathVariable Long id) {
+        logger.debug("Reactivating user with ID: {}", id);
+        
+        boolean success = userService.reactivateUser(id);
+
+        if (success) {
+            return ResponseEntity.ok(new SuccessResponse("User reactivated successfully"));
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse("User not found with ID: " + id));
+        }
+    }
+
+    // Inner classes for request/response DTOs
+    public static class CreateUserRequest {
+        private String username;
+        private String email;
+        private String password;
+        private String firstName;
+        private String lastName;
+
+        // Getters and setters
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        
+        public String getPassword() { return password; }
+        public void setPassword(String password) { this.password = password; }
+        
+        public String getFirstName() { return firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+        
+        public String getLastName() { return lastName; }
+        public void setLastName(String lastName) { this.lastName = lastName; }
+    }
+
+    public static class UpdateUserRequest {
+        private String username;
+        private String email;
+        private String firstName;
+        private String lastName;
+
+        // Getters and setters
+        public String getUsername() { return username; }
+        public void setUsername(String username) { this.username = username; }
+        
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+        
+        public String getFirstName() { return firstName; }
+        public void setFirstName(String firstName) { this.firstName = firstName; }
+        
+        public String getLastName() { return lastName; }
+        public void setLastName(String lastName) { this.lastName = lastName; }
+    }
+
+    public static class UpdatePasswordRequest {
+        private String currentPassword;
+        private String newPassword;
+
+        // Getters and setters
+        public String getCurrentPassword() { return currentPassword; }
+        public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
+        
+        public String getNewPassword() { return newPassword; }
+        public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ErrorResponse {
+        private String error;
+        private String timestamp;
+        private Long userId;
+
+        public ErrorResponse(String error) {
+            this.error = error;
+            this.timestamp = java.time.Instant.now().toString();
+        }
+
+        public ErrorResponse(String error, Long userId) {
+            this.error = error;
+            this.userId = userId;
+            this.timestamp = java.time.Instant.now().toString();
+        }
+
+        public String getError() { return error; }
+        public void setError(String error) { this.error = error; }
+        
+        public String getTimestamp() { return timestamp; }
+        public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+        
+        public Long getUserId() { return userId; }
+        public void setUserId(Long userId) { this.userId = userId; }
+    }
+
+    public static class SuccessResponse {
+        private String message;
+
+        public SuccessResponse(String message) {
+            this.message = message;
+        }
+
+        public String getMessage() { return message; }
+        public void setMessage(String message) { this.message = message; }
+    }
+}
