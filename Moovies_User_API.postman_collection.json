@@ -1,0 +1,518 @@
+{
+	"info": {
+		"name": "Moovies User API",
+		"description": "Complete User API testing collection for Moovies Backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "1",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "1. Create User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Test that user was created successfully",
+							"pm.test('Status code is 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"// Save user ID for other requests",
+							"if (pm.response.code === 201) {",
+							"    const responseJson = pm.response.json();",
+							"    pm.collectionVariables.set('user_id', responseJson.id);",
+							"    console.log('Created user ID:', responseJson.id);",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users"]
+				}
+			}
+		},
+		{
+			"name": "2. Get User by ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response contains user data', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.have.property('id');",
+							"    pm.expect(responseJson).to.have.property('username');",
+							"    pm.expect(responseJson).to.have.property('email');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "3. Search User by Username",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Found correct user', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.username).to.eql('testuser');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/search?query=testuser",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "search"],
+					"query": [
+						{
+							"key": "query",
+							"value": "testuser"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "4. Get All Users",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response is an array', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users"]
+				}
+			}
+		},
+		{
+			"name": "5. Update User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User was updated', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.firstName).to.eql('Updated');",
+							"    pm.expect(responseJson.lastName).to.eql('Name');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"firstName\": \"Updated\",\n  \"lastName\": \"Name\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "6. Update Password",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Password updated successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.message).to.eql('Password updated successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"currentPassword\": \"password123\",\n  \"newPassword\": \"newPassword456\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}/password",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}", "password"]
+				}
+			}
+		},
+		{
+			"name": "7. Deactivate User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User deactivated successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.message).to.eql('User deactivated successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "8. Try to Get Deactivated User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200 (user still exists but inactive)', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User is inactive', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.isActive).to.eql(false);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "9. Reactivate User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User reactivated successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.message).to.eql('User reactivated successfully');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}/reactivate",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}", "reactivate"]
+				}
+			}
+		},
+		{
+			"name": "10. Verify User is Active Again",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('User is active again', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.isActive).to.eql(true);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/{{user_id}}",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "{{user_id}}"]
+				}
+			}
+		},
+		{
+			"name": "11. Get All Inactive Users",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Response is an array', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson).to.be.an('array');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/inactive",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "inactive"]
+				}
+			}
+		},
+		{
+			"name": "12. Deactivate Bulk Users - Valid IDs Only",
+			"event": [
+				{
+					"listen": "pre-request",
+					"script": {
+						"exec": [
+							"// Set up test data - valid user IDs",
+							"const validUserIds = [1, 2, 3];",
+							"",
+							"// Store for validation in tests",
+							"pm.collectionVariables.set('bulk_user_ids', JSON.stringify(validUserIds));",
+							"pm.collectionVariables.set('expected_count', validUserIds.length.toString());"
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test('Bulk users deactivated successfully', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.message).to.eql('Bulk users deactivated successfully');",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "[1, 2, 3]"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/users/deactivate-bulk",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "deactivate-bulk"]
+				}
+			}
+		},
+		{
+			"name": "13. Try to Deactivate Already Inactive User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 400 Bad Request', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error message indicates user is already inactive', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.error).to.eql('User is already inactive');",
+							"});",
+							"",
+							"pm.test('Response includes timestamp and userId', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.timestamp).to.exist;",
+							"    pm.expect(responseJson.userId).to.exist;",
+							"    pm.expect(responseJson.userId).to.eql(1);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/1",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "1"]
+				}
+			}
+		},
+		{
+			"name": "14. Try to Reactivate Already Active User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test('Status code is 400 Bad Request', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test('Error message indicates user is already active', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.error).to.eql('User is already active');",
+							"});",
+							"",
+							"pm.test('Response includes timestamp and userId', function () {",
+							"    const responseJson = pm.response.json();",
+							"    pm.expect(responseJson.timestamp).to.exist;",
+							"    pm.expect(responseJson.userId).to.exist;",
+							"    pm.expect(responseJson.userId).to.eql(2);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/api/users/2/reactivate",
+					"host": ["{{base_url}}"],
+					"path": ["api", "users", "2", "reactivate"]
+				}
+			}
+		}
+	]
+}
