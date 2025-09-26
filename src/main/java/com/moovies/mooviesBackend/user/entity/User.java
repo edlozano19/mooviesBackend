@@ -49,6 +49,10 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role", nullable = false)
+    private UserRole role = UserRole.USER;
+
     public void setPassword(String plainPassword) {
         this.passwordHash = plainPassword;
     }
