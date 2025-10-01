@@ -12,8 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.moovies.mooviesBackend.auth.dto.LoginRequest;
 import com.moovies.mooviesBackend.auth.dto.LoginResponse;
+import com.moovies.mooviesBackend.auth.dto.RegisterRequest;
 import com.moovies.mooviesBackend.auth.service.AuthService;
 import com.moovies.mooviesBackend.config.LoggingConfig;
+import com.moovies.mooviesBackend.user.entity.User;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -37,6 +39,21 @@ public class AuthController {
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse("Invalid credentials"));
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody RegisterRequest registerRequest) {
+        logger.debug("Register attempt for user: {}", registerRequest.getUsername());
+
+        try {
+            User createdUser = authService.register(registerRequest);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                .body(createdUser);
+        } catch (Exception e) {
+            logger.error("Register failed for user: {}", registerRequest.getUsername(), e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse("Registration failed" + e.getMessage()));
         }
     }
 
