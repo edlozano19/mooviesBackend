@@ -59,7 +59,7 @@ public class AuthService {
          String token = jwtService.generateToken(user);
          logger.info("Succesful login for user: {}", loginRequest.getUsernameOrEmail());
 
-         return new LoginResponse(token, "Bearer", user.getId(), user.getUsername(), user.getEmail(), user.getRole());
+         return new LoginResponse(token, "Bearer", user.getId(), user.getUsername(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getRole());
         } catch (Exception e) {
             logger.error("Login failed for user or email: {}", loginRequest.getUsernameOrEmail(), e.getMessage());
             throw e;
