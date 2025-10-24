@@ -8,5 +8,8 @@
     <!-- Include changelog files here -->
     <include file="db/changelog/001-create-users-table.xml"/>
     <include file="db/changelog/002-add-user-role-column-users-table.xml"/>
-    
+    <include file="db/changelog/003-create-movies-table.xml"/>
+    <include file="db/changelog/004-create-user-movie-ratings-table.xml"/>
+    <include file="db/changelog/005-create-user-watch-list-table.xml"/>
+    <include file="db/changelog/006-create-user-watched-list-table.xml"/>
 </databaseChangeLog>
