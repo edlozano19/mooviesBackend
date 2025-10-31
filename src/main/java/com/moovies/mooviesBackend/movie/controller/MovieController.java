@@ -131,13 +131,13 @@ public class MovieController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @DeleteMapping("/watchlist/{movieId}")
+    @DeleteMapping("/watchlist/{tmdbId}")
     public ResponseEntity<Void> removeFromWatchList (
-            @PathVariable Long movieId,
+            @PathVariable Long tmdbId,
             @AuthenticationPrincipal UserPrincipal principal) {
-        log.info("User {} removing movie from watch list", principal.getUser().getId(), movieId);
+        log.info("User {} removing movie from watch list", principal.getUser().getId(), tmdbId);
 
-        watchListService.removeFromWatchList(principal.getUser().getId(), movieId);
+        watchListService.removeFromWatchListByTmdbId(principal.getUser().getId(), tmdbId);
         return ResponseEntity.noContent().build();
     }
 
@@ -162,11 +162,11 @@ public class MovieController {
 
     @DeleteMapping("/watched/{movieId}")
     public ResponseEntity<Void> removeFromWatchedList (
-            @PathVariable Long movieId,
+            @PathVariable Long tmdbId,
             @AuthenticationPrincipal UserPrincipal principal) {
-        log.info("User {} removing movie from watched list", principal.getUser().getId(), movieId);
+        log.info("User {} removing movie from watched list", principal.getUser().getId(), tmdbId);
         
-        watchedListService.removeFromWatchedList(principal.getUser().getId(), movieId);
+        watchedListService.removeFromWatchedListByTmdbId(principal.getUser().getId(), tmdbId);
         return ResponseEntity.noContent().build();
     }
 }

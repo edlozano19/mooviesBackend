@@ -79,6 +79,20 @@ public class WatchedListService {
         log.info("Movie removed from watched list");
     }
 
+    @Transactional
+    public void removeFromWatchedListByTmdbId(Long userId, Long tmdbId) {
+        log.info("Removing movie with TMDB ID {} from watched list for user {}", tmdbId, userId);
+
+        Movie movie = movieService.getCachedMovieByTmdbId(tmdbId)
+            .orElseThrow(() -> new RuntimeException("Movie not found"));
+
+        UserWatchedList watchedListEntry = userWatchedListRepository.findByUserIdAndMovieId(userId, movie.getId())
+            .orElseThrow(() -> new RuntimeException("Movie not found in watched list"));
+
+        userWatchedListRepository.delete(watchedListEntry);
+        log.info("Movie removed from watched list");
+    }
+
     public boolean isOnWatchedList(Long userId, Long movieId) {
         log.info("Checking if movie with ID {} is on watched list for user {}", movieId, userId);
 
