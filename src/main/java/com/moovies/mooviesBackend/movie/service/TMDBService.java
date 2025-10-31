@@ -14,17 +14,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TMDBService {
     private final RestTemplate restTemplate;
-    private final String apiKey;
     private final String baseUrl;
     private final String imageBaseUrl;
 
     public TMDBService(
             RestTemplate restTemplate,
-            @Value("${tmdb.api.key}") String apiKey,
             @Value("${tmdb.api.base-url}") String baseUrl,
             @Value("${tmdb.api.image-base-url}") String imageBaseUrl) {
         this.restTemplate = restTemplate;
-        this.apiKey = apiKey;
         this.baseUrl = baseUrl;
         this.imageBaseUrl = imageBaseUrl;
     }
@@ -34,12 +31,10 @@ public class TMDBService {
 
         String url = UriComponentsBuilder
             .fromUriString(baseUrl + "/search/movie")
-            .queryParam("api_key", apiKey)
             .queryParam("query", query)
             .queryParam("page", page)
             .queryParam("language", "en-US")
             .toUriString();
-
         TMDBSearchResponseDTO response = restTemplate.getForObject(url, TMDBSearchResponseDTO.class);
         log.info("TMDB search returned {} results",
             response != null ? response.getResults().size() : 0);
@@ -52,7 +47,6 @@ public class TMDBService {
 
         String url = UriComponentsBuilder
             .fromUriString(baseUrl + "/movie/" + tmdbId)
-            .queryParam("api_key", apiKey)
             .queryParam("language", "en-US")
             .toUriString();
 
