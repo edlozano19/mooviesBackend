@@ -86,10 +86,8 @@ public class WatchListService {
         Movie movie = movieService.getCachedMovieByTmdbId(tmdbId)
             .orElseThrow(() -> new RuntimeException("Movie not found"));
 
-        UserWatchList watchListEntry = userWatchListRepository.findByUserIdAndMovieId(userId, movie.getId())
-            .orElseThrow(() -> new RuntimeException("Movie not found in watch list"));
+        userWatchListRepository.deleteByUserIdAndMovieId(userId, movie.getId());
 
-        userWatchListRepository.delete(watchListEntry);
         log.info("Movie removed from watch list");
     }
 

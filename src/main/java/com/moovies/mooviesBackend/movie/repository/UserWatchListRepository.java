@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
 
 import com.moovies.mooviesBackend.movie.entity.UserWatchList;
@@ -16,6 +17,7 @@ public interface UserWatchListRepository extends JpaRepository<UserWatchList, Lo
 
     boolean existsByUserIdAndMovieId(Long userId, Long movieId);
 
+    @Modifying
     void deleteByUserIdAndMovieId(Long userId, Long movieId);
 
     long countByUserId(Long userId);

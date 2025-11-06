@@ -160,7 +160,7 @@ public class MovieController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @DeleteMapping("/watched/{movieId}")
+    @DeleteMapping("/watched/{tmdbId}")
     public ResponseEntity<Void> removeFromWatchedList (
             @PathVariable Long tmdbId,
             @AuthenticationPrincipal UserPrincipal principal) {

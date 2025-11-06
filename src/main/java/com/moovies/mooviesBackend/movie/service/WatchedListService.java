@@ -72,10 +72,8 @@ public class WatchedListService {
     public void removeFromWatchedList(Long userId, Long movieId) {
         log.info("Removing movie with ID {} from watched list for user {}", movieId, userId);
 
-        UserWatchedList watchedListEntry = userWatchedListRepository.findByUserIdAndMovieId(userId, movieId)
-            .orElseThrow(() -> new RuntimeException("Movie not found in watched list"));
+        userWatchedListRepository.deleteByUserIdAndMovieId(userId, movieId);
 
-        userWatchedListRepository.delete(watchedListEntry);
         log.info("Movie removed from watched list");
     }
 
