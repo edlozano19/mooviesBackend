@@ -15,7 +15,6 @@ import com.moovies.mooviesBackend.exception.UserEmailAlreadyExistsException;
 import com.moovies.mooviesBackend.exception.UserNotFoundException;
 import com.moovies.mooviesBackend.exception.UserPasswordMismatchException;
 import com.moovies.mooviesBackend.exception.UserUsernameAlreadyExists;
-import com.moovies.mooviesBackend.user.controller.UserController.CreateUserRequest;
 import com.moovies.mooviesBackend.user.entity.User;
 import com.moovies.mooviesBackend.user.entity.UserRole;
 import com.moovies.mooviesBackend.user.service.UserService;
